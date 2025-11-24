@@ -167,6 +167,18 @@ class BTree:
         if not node.leaf:
             for child in node.children:
                 self._pretty_print_node(child, lines, level+1)
+    
+    def ascii_collect(self):
+        lines = []
+        self._ascii_collect_node(self.root, 0, lines)
+        return lines
+
+    def _ascii_collect_node(self, node, level, lines):
+        indent = "  " * level
+        lines.append(f"{indent}{node.keys}")
+        if not node.leaf:
+            for child in node.children:
+                self._ascii_collect_node(child, level + 1, lines)
 
 # ------------------------- Inverted Index -------------------------
 
@@ -307,6 +319,40 @@ def demo_build_and_show(num_documents: int = 3, tokens_each: int = 3000, btree_t
 
     return ii, docs
 
+def save_full_output(INVERTED_INDEX, DOCUMENTS, all_terms, filename="full_output.txt"):
+    with open(filename, "w", encoding="utf-8", newline="\n") as f:
+
+        # --- DOCUMENTS ---
+        f.write("=== GENERATED DOCUMENTS ===\n\n")
+        for name, text in DOCUMENTS.items():
+            f.write(f"--- {name} ---\n")
+            f.write(text) 
+            f.write(f"\n\n(total {len(text.split())} tokens)\n\n")
+            f.write("=" * 80 + "\n\n")
+
+        # --- TERMS ---
+        f.write("\n=== ALL TERMS (SORTED) ===\n")
+        for t in all_terms:
+            f.write(t + "\n")
+
+        f.write("\n" + "="*80 + "\n\n")
+
+        # --- POSTING LISTS ---
+        f.write("=== FULL POSTING LISTS ===\n\n")
+        for t in all_terms:
+            posting = INVERTED_INDEX.search(t)
+            f.write(f"{t}: {posting}\n")
+
+        f.write("\n" + "="*80 + "\n\n")
+
+        # --- ASCII B-TREE ---
+        f.write("=== ASCII B-TREE ===\n\n")
+        lines = INVERTED_INDEX.btree.ascii_collect()
+        for line in lines:
+            f.write(line + "\n")
+
+    print(f"🔵 Full output saved to: {filename}")
+    
 if __name__ == '__main__':
     # Build the inverted index and documents
     INVERTED_INDEX, DOCUMENTS = demo_build_and_show(
@@ -314,6 +360,7 @@ if __name__ == '__main__':
         tokens_each=3000,
         btree_t=3
     )
+
 
     print("\n===================== FULL OUTPUT =====================\n")
 
@@ -345,7 +392,7 @@ if __name__ == '__main__':
     # === ASCII graphical B-tree ===
     print("\n=== B-TREE ASCII ART ===")
     print(INVERTED_INDEX.btree.ascii_print())
+    save_full_output(INVERTED_INDEX, DOCUMENTS, all_terms)
 
 
     print("\n===================== END FULL OUTPUT =====================")
-
