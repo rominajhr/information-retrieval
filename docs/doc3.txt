@@ -1,0 +1,5 @@
+Information retrieval systems rely on indexing, searching, and ranking documents.
+An inverted index maps each term to a list of documents.
+Tree based data structures such as B trees allow efficient lookup operations.
+Algorithms for search and retrieval must balance speed and memory usage.
+Efficient query processing is essential for scalable systems.
