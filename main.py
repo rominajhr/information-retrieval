@@ -1,3 +1,4 @@
+
 import re
 import json
 import random
@@ -245,79 +246,42 @@ class InvertedIndex:
                 break
             print(f"{term} -> {posting}")
 
-# ------------------------- Document generation / I/O helpers -------------------------
+# ------------------------- Documents -------------------------
 
-LOREM_WORDS = (
-    "lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua"
-).split()
+import os
 
-# generate a random document with approx n_tokens tokens
+def load_documents_from_directory(dir_path: str):
+    """
+    Loads all .txt files from a directory.
+    filename (without extension) is used as doc_id.
+    """
+    documents = {}
 
-BASE_WORDS = [
-    "system","model","random","vector","matrix","token","language","semantic","python","data",
-    "index","tree","algorithm","search","compute","neural","layer","network","memory","buffer",
-    "encode","decode","parser","query","process","signal","feature","object","storage","design",
-    "pattern","entropy","value","kernel","archive","lookup","mapping","embedding","gradient"
-]
+    for filename in sorted(os.listdir(dir_path)):
+        if filename.lower().endswith(".txt"):
+            doc_id = os.path.splitext(filename)[0]
+            full_path = os.path.join(dir_path, filename)
+            with open(full_path, "r", encoding="utf-8") as f:
+                documents[doc_id] = f.read()
 
-import string
+    return documents
 
-# Expand vocabulary to thousands of unique words
-EXTENDED_VOCAB = set(BASE_WORDS)
-
-# shuffled variants
-for w in BASE_WORDS:
-    for _ in range(20):
-        EXTENDED_VOCAB.add(''.join(random.sample(w, len(w))))
-
-# prefix/suffix synthesizing
-for w in BASE_WORDS:
-    for _ in range(20):
-        p = ''.join(random.choices(string.ascii_lowercase, k=3))
-        s = ''.join(random.choices(string.ascii_lowercase, k=3))
-        EXTENDED_VOCAB.add(p + w + s)
-
-EXTENDED_VOCAB = list(EXTENDED_VOCAB)
-
-
-def generate_random_document(n_tokens: int = 3000, vocabulary: Optional[List[str]] = None) -> str:
-    """Generates a document with 3000 tokens using thousands of unique words."""
-    if vocabulary is None:
-        vocabulary = EXTENDED_VOCAB
-
-    tokens = [random.choice(vocabulary) for _ in range(n_tokens)]
-
-    # sprinkle punctuation to test tokenizer
-    for i in range(0, len(tokens), 150):
-        tokens[i] += random.choice([",", ".", ";"])
-
-    return " ".join(tokens)
-
-# load plain text file
-
-def load_text_file(path: str) -> str:
-    with open(path, 'r', encoding='utf-8') as f:
-        return f.read()
 
 # ------------------------- Demo / Main -------------------------
 
-def demo_build_and_show(num_documents: int = 3, tokens_each: int = 3000, btree_t: int = 3):
-    print('--- Building standard inverted index (no stemming, no positional info) ---')
+def demo_build_and_show_from_files(input_dir: str, btree_t: int = 3):
+    print('--- Building inverted index from input text files ---')
     ii = InvertedIndex(btree_degree=btree_t)
 
-    docs = {}
-    for i in range(1, num_documents+1):
-        doc_id = f'doc{i}'
-        txt = generate_random_document(n_tokens=tokens_each)
-        docs[doc_id] = txt
-        ii.add_document(doc_id, txt)
-        print(f'Added {doc_id} ({tokens_each} tokens approx)')
+    documents = load_documents_from_directory(input_dir)
+
+    for doc_id, text in documents.items():
+        ii.add_document(doc_id, text)
+        print(f'Added {doc_id} ({len(text.split())} tokens)')
 
     ii.finalize()
+    return ii, documents
 
-    
-
-    return ii, docs
 
 def save_full_output(INVERTED_INDEX, DOCUMENTS, all_terms, filename="full_output.txt"):
     with open(filename, "w", encoding="utf-8", newline="\n") as f:
@@ -355,11 +319,13 @@ def save_full_output(INVERTED_INDEX, DOCUMENTS, all_terms, filename="full_output
     
 if __name__ == '__main__':
     # Build the inverted index and documents
-    INVERTED_INDEX, DOCUMENTS = demo_build_and_show(
-        num_documents=3,
-        tokens_each=3000,
+    INPUT_DIR = "docs" #docs path
+
+    INVERTED_INDEX, DOCUMENTS = demo_build_and_show_from_files(
+        input_dir=INPUT_DIR,
         btree_t=3
     )
+
 
 
     print("\n===================== FULL OUTPUT =====================\n")
